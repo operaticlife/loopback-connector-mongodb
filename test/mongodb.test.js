@@ -14,6 +14,7 @@ var sinon = require('sinon');
 var sanitizeFilter = require('../lib/mongodb').sanitizeFilter;
 
 var GeoPoint = require('loopback-datasource-juggler').GeoPoint;
+const Decimal128 = require('mongodb').Decimal128;
 
 var Superhero,
   User,
@@ -29,7 +30,8 @@ var Superhero,
   PostWithStringIdAndRenamedColumns,
   Employee,
   PostWithDisableDefaultSort,
-  WithEmbeddedBinaryProperties;
+  WithEmbeddedBinaryProperties,
+  Movies;
 
 describe('lazyConnect', function() {
   it('should skip connect phase (lazyConnect = true)', function(done) {
@@ -307,7 +309,163 @@ describe('mongodb connector', function() {
         },
       }
     );
-
+     Movies = db.define('Movies', {
+      title: {
+        type: String,
+      },
+      releaseDate: {
+        type: Date,
+      },
+      rating: {
+        type: String,
+        mongodb: {
+          dataType: 'Decimal128',
+        },
+      },
+      runtime: {
+        type: Number,
+      },
+      states: {
+        type: [
+          {
+            type: String,
+          },
+        ],
+      },
+      randomReview: {
+        type: [
+          {
+            type: 'string',
+            mongodb: {
+              dataType: 'Decimal128',
+            },
+          },
+        ],
+      },
+      randomReleaseDates: {
+        type: [
+          {
+            type: Date,
+          },
+        ],
+      },
+      tickets: {
+        type: [
+          {
+            theatre: {
+              type: String,
+            },
+            unitprice: {
+              type: String,
+              mongodb: {
+                dataType: 'Decimal128',
+              },
+            },
+            capacity: {
+              type: Number,
+            },
+          },
+        ],
+      },
+      awards: {
+        type: {
+          wins: {
+            type: Number,
+          },
+          prizeMoney: {
+            type: String,
+            mongodb: {
+              dataType: 'Decimal128',
+            },
+          },
+          currency: {
+            type: String,
+          },
+        },
+      },
+      imdb: {
+        type: {
+          duration: {
+            type: Number,
+          },
+          reviewDate: {
+            type: Date,
+          },
+          rating: {
+            type: String,
+            mongodb: {
+              dataType: 'Decimal128',
+            },
+          },
+          innerArray: [
+            {
+              testNumber: {
+                type: Number,
+              },
+              testDate: {
+                type: Date,
+              },
+              testDecimal: {
+                type: String,
+                mongodb: {
+                  dataType: 'Decimal128',
+                },
+              },
+              ObjInsideAnArray: {
+                testNumber: {
+                  type: Number,
+                },
+                testDate: {
+                  type: Date,
+                },
+                testDecimal: {
+                  type: String,
+                  mongodb: {
+                    dataType: 'Decimal128',
+                  },
+                },
+              },
+              nestedArray: [
+                {
+                  testNumber: {
+                    type: Number,
+                  },
+                  testDate: {
+                    type: Date,
+                  },
+                  testDecimal: {
+                    type: String,
+                    mongodb: {
+                      dataType: 'Decimal128',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          innerObj: {
+            innerObj: {
+              innerObj: {
+                innerObj: {
+                  testNumber: {
+                    type: Number,
+                  },
+                  testDate: {
+                    type: Date,
+                  },
+                  testDecimal: {
+                    type: String,
+                    mongodb: {
+                      dataType: 'Decimal128',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
     User.hasMany(Post);
     Post.belongsTo(User);
   });
@@ -545,6 +703,100 @@ describe('mongodb connector', function() {
     should.not.exist(PostWithNumberUnderscoreId.definition.properties.id);
 
     done();
+  });
+
+  it.only('should create instance with correct type for nested properties', function(done) {
+    Movies.dataSource.settings.debug = true;
+    Movies.settings.updateOnLoad = true;
+    Movies.create({
+      'title': 'Once Upon a Time in the West-5',
+      'releaseDate': '2019-01-29T04:00:39.828+0000',
+      'rating': '4.25',
+      'runtime': 135,
+      'states': [
+        'IL',
+        'MI',
+        'IN',
+      ],
+      'randomReview': [
+        '3.5',
+        '4.5',
+        '4.0',
+      ],
+      'tickets': [
+        {
+          'theatre': 'AMC',
+          'capacity': '205',
+          'unitprice': '19.5',
+        },
+        {
+          'theatre': 'IMAX',
+          'capacity': '300',
+          'unitprice': '39.5',
+        },
+      ],
+      'awards': {
+        'currency': 'USD',
+        'wins': '4',
+        'prizeMoney': '100000.00',
+      },
+      'imdb': {
+        'reviewDate': '2019-01-29T04:00:39.828Z',
+        'innerArray': [
+          {
+            'ObjInsideAnArray': {
+              'testNumber': '1234',
+              'testDate': "TIMESTAMP '2019-01-30 18:26:38.551022'",
+              'testDecimal': '99.55',
+            },
+            'nestedArray': [
+              {
+                'testNumber': '1234',
+                'testDate': "TIMESTAMP '2019-01-30 18:26:38.551022'",
+                'testDecimal': '99.55',
+              },
+              {
+                'testNumber': '1234',
+                'testDate': "TIMESTAMP '2019-01-30 18:26:38.551022'",
+                'testDecimal': '99.55',
+              },
+            ],
+            'testNumber': '1234',
+            'testDate': "TIMESTAMP '2019-01-30 18:26:38.551022'",
+            'testDecimal': '99.55',
+          },
+          {
+            'ObjInsideAnArray': null,
+            'nestedArray': null,
+            'testNumber': '5678',
+            'testDate': "TIMESTAMP '2019-01-30 18:26:38.551022'",
+            'testDecimal': '99.55',
+          },
+        ],
+        'innerObj': {
+          'innerObj': {
+            'innerObj': {
+              'innerObj': {
+                'testNumber': '6666',
+                'testDate': '2019-01-30 18:26:38.551022',
+                'testDecimal': '55.55',
+              },
+            },
+          },
+        },
+        'duration': '135',
+        'rating': '4.5',
+      },
+      'randomReleaseDates': [
+        '2019-01-22T04:00:39.828+0000',
+        '2019-01-23T04:00:39.828+0000',
+        '2019-01-24T04:00:39.828+0000',
+      ],
+    }, function(err, movie) {
+      // movie.toObject().randomReleaseDates[0].constructor.should.be.equal(Date);
+      movie.toObject().rating.constructor.should.be.equal(Decimal128);
+      done();
+    });
   });
 
   it('should handle correctly type Number for id field _id', function(done) {
